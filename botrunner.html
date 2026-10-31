@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>বট রানার</title>
+<style>
+:root{--main:#6c5ce7;--bg:#0f0c29;--card:#1b1740;--text:#f1f1f8;--muted:#9a98b8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63);color:var(--text);min-height:100vh;padding:16px}
+.wrap{max-width:520px;margin:0 auto}
+h1{text-align:center;margin:14px 0 4px}
+.sub{text-align:center;color:var(--muted);margin-bottom:18px;font-size:.9rem}
+.card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:pop .5s}
+@keyframes pop{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+input{width:100%;padding:13px;border-radius:12px;border:2px solid #3a3568;background:#120f33;color:#fff;font-size:1rem;margin-bottom:12px;outline:none}
+input:focus{border-color:var(--main)}
+button{font-family:inherit;border:none;border-radius:12px;padding:13px;font-size:1rem;font-weight:bold;cursor:pointer;width:100%}
+.go{background:linear-gradient(135deg,#6c5ce7,#fd79a8);color:#fff}
+.stop{background:#d63031;color:#fff}
+.hidden{display:none!important}
+.warn{background:#3a2f12;border:1px solid #fdcb6e;color:#fdcb6e;border-radius:12px;padding:10px 12px;font-size:.85rem;line-height:1.6;margin-bottom:12px}
+.status{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.dot{width:12px;height:12px;border-radius:50%;background:#00b894;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.3}}
+#log{background:#0b0924;border-radius:12px;padding:10px;height:240px;overflow:auto;font-size:.8rem;line-height:1.7;color:#cfcfe8;font-family:monospace}
+#log div{border-bottom:1px solid #1e1a45;padding:2px 0}
+.ok{color:#55efc4}.err{color:#ff7675}.in{color:#74b9ff}
+.row{display:flex;gap:10px}
+.small{color:var(--muted);font-size:.8rem;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🤖 বট রানার</h1>
+  <div class="sub">টোকেন দিন, বট সাথে সাথে চালু</div>
+
+  <div class="card" id="setup">
+    <div class="warn">
+      ⚠️ টোকেন শুধু আপনার ব্রাউজারে থাকে এবং সরাসরি টেলিগ্রামে যায়, কোথাও জমা হয় না।
+      নিজের বটের টোকেনই দিন, অন্য কারও টোকেন নয়।
+    </div>
+    <input id="tk" type="password" placeholder="বটের টোকেন (BotFather থেকে)" autocomplete="off">
+    <button class="go" onclick="startBot()">▶ বট চালু করুন</button>
+    <div class="small" style="margin-top:12px">
+      মনে রাখবেন: এই পেজ খোলা থাকলেই বট চলবে। ট্যাব বন্ধ করলে বট থেমে যাবে।
+      ২৪ ঘণ্টা চালু রাখতে আলাদা সার্ভার লাগে।
+    </div>
+  </div>
+
+  <div class="card hidden" id="run">
+    <div class="status"><div class="dot"></div><div>চলছে: <b id="bn"></b></div></div>
+    <div class="small" style="margin-bottom:10px">টেলিগ্রামে গিয়ে বটকে <b>/start</b> পাঠান।</div>
+    <div id="log"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="stop" onclick="stopBot()">⏹ বট বন্ধ করুন</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const QUOTES = [
+  "ছোট ছোট চেষ্টাই বড় সাফল্যের শুরু।",
+  "আজকের কাজ আজই শেষ করো।",
+  "শেখার কোনো শেষ নেই।",
+  "ভুল করাই শেখার প্রথম ধাপ।"
+];
+let token = '', running = false, offset = 0, ctrl = null;
+
+function log(msg, cls) {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = new Date().toLocaleTimeString('bn-BD') + '  ' + msg;
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+async function api(method, params = {}, signal) {
+  const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(params),
+    signal
+  });
+  const j = await r.json();
+  if (!j.ok) { const e = new Error(j.description || 'API error'); e.code = j.error_code; throw e; }
+  return j.result;
+}
+
+/* ===== কীবোর্ড ===== */
+const mainMenu = {inline_keyboard: [
+  [{text: '🤖 পরিচিতি', callback_data: 'about'}, {text: '🕒 এখনকার সময়', callback_data: 'time'}],
+  [{text: '💡 অনুপ্রেরণা', callback_data: 'quote'}, {text: '❓ সাহায্য', callback_data: 'help'}],
+  [{text: '🌐 গিটহাব', url: 'https://github.com'}]
+]};
+const backMenu = {inline_keyboard: [[{text: '⬅️ মেনুতে ফিরুন', callback_data: 'menu'}]]};
+const bottomKb = {keyboard: [
+  [{text: '📋 মেনু'}, {text: '🕒 সময়'}],
+  [{text: '💡 অনুপ্রেরণা'}, {text: '❓ সাহায্য'}]
+], resize_keyboard: true};
+
+const timeText = () => '🕒 ' + new Date().toLocaleTimeString('bn-BD', {timeZone: 'Asia/Dhaka'}) +
+  '\n📅 ' + new Date().toLocaleDateString('bn-BD', {timeZone: 'Asia/Dhaka'});
+const quote = () => '💡 ' + QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+/* ===== আপডেট হ্যান্ডলার ===== */
+async function handle(u) {
+  if (u.callback_query) {
+    const q = u.callback_query, chat = q.message.chat.id, mid = q.message.message_id;
+    log('বাটন: ' + q.data + ' (' + (q.from.first_name || '') + ')', 'in');
+    await api('answerCallbackQuery', {callback_query_id: q.id}).catch(() => {});
+    const edit = (text, kb) => api('editMessageText', {chat_id: chat, message_id: mid, text, reply_markup: kb});
+    if (q.data === 'about') await edit('🤖 আমি ব্রাউজার থেকে চালানো একটি টেলিগ্রাম বট।', backMenu);
+    else if (q.data === 'time') await edit(timeText(), backMenu);
+    else if (q.data === 'quote') await edit(quote(), backMenu);
+    else if (q.data === 'help') await edit('বাটন চেপে অপশন বেছে নিন, অথবা /start লিখুন।', backMenu);
+    else if (q.data === 'menu') await edit('একটি অপশন বেছে নিন:', mainMenu);
+    return;
+  }
+  const m = u.message;
+  if (!m || !m.text) return;
+  const chat = m.chat.id, t = m.text, name = (m.from && m.from.first_name) || 'বন্ধু';
+  log('মেসেজ: ' + t + ' (' + name + ')', 'in');
+  const send = (text, kb) => api('sendMessage', {chat_id: chat, text, reply_markup: kb});
+  if (t === '/start') {
+    await send(`আসসালামু আলাইকুম, ${name}! 👋\nআমি আপনার বট। নিচের বাটন ব্যবহার করুন।`, bottomKb);
+    await send('একটি অপশন বেছে নিন:', mainMenu);
+  } else if (t === '/menu' || t === '📋 মেনু') await send('মেনু:', mainMenu);
+  else if (t === '/help' || t === '❓ সাহায্য') await send('কমান্ড:\n/start - শুরু\n/menu - মেনু\n/help - সাহায্য');
+  else if (t === '🕒 সময়') await send(timeText());
+  else if (t === '💡 অনুপ্রেরণা') await send(quote());
+  else await send('আপনি লিখেছেন: ' + t);
+}
+
+/* ===== শুরু / বন্ধ ===== */
+async function startBot() {
+  token = $('tk').value.trim();
+  if (!/^\d+:[\w-]{30,}$/.test(token)) return alert('টোকেনের ফরম্যাট ঠিক নয়। BotFather থেকে সম্পূর্ণ টোকেন কপি করুন।');
+  try {
+    const me = await api('getMe');
+    $('bn').textContent = '@' + me.username;
+    $('setup').classList.add('hidden');
+    $('run').classList.remove('hidden');
+    $('tk').value = '';
+    log('✅ বট পাওয়া গেছে: @' + me.username, 'ok');
+    await api('deleteWebhook', {drop_pending_updates: false});
+    running = true; offset = 0;
+    log('▶ বট চালু হয়েছে, মেসেজের অপেক্ষায়...', 'ok');
+    poll();
+  } catch (e) {
+    alert('টোকেন ঠিক নয় বা নেটওয়ার্ক সমস্যা: ' + e.message);
+  }
+}
+
+async function poll() {
+  while (running) {
+    try {
+      ctrl = new AbortController();
+      const ups = await api('getUpdates', {offset, timeout: 25, allowed_updates: ['message', 'callback_query']}, ctrl.signal);
+      for (const u of ups) {
+        offset = u.update_id + 1;
+        try { await handle(u); } catch (e) { log('হ্যান্ডলার ত্রুটি: ' + e.message, 'err'); }
+      }
+    } catch (e) {
+      if (!running) break;
+      if (e.name === 'AbortError') continue;
+      if (e.code === 409) { log('⚠️ একই বট অন্য কোথাও চলছে (অন্য ট্যাব বা সার্ভার)। সেটা বন্ধ করুন।', 'err'); }
+      else if (e.code === 401) { log('❌ টোকেন বাতিল বা ভুল। বট বন্ধ হলো।', 'err'); stopBot(true); break; }
+      else log('ত্রুটি: ' + e.message + ' (আবার চেষ্টা...)', 'err');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+}
+
+function stopBot(silent) {
+  running = false;
+  if (ctrl) ctrl.abort();
+  token = '';
+  if (!silent) log('⏹ বট বন্ধ করা হয়েছে', 'err');
+  setTimeout(() => { $('run').classList.add('hidden'); $('setup').classList.remove('hidden'); $('log').innerHTML = ''; }, silent ? 1500 : 600);
+}
+
+addEventListener('beforeunload', () => { running = false; });
+</script>
+</body>
+</html>
