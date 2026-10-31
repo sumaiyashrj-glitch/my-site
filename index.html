@@ -1,13 +1,299 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>আমার প্রথম সাইট</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>কানেক্ট</title>
+<style>
+:root{--main:#6c5ce7;--main2:#a29bfe;--bg:#f0f2f8;--card:#fff;--text:#2d3436;--muted:#8a8fa3}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* ===== লগইন / রেজিস্ট্রেশন ===== */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+ background:linear-gradient(-45deg,#6c5ce7,#a29bfe,#fd79a8,#74b9ff);background-size:400% 400%;
+ animation:grad 12s ease infinite;position:relative;overflow:hidden}
+@keyframes grad{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+.bubble{position:absolute;bottom:-80px;border-radius:50%;background:rgba(255,255,255,.18);animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-120vh);opacity:0}}
+.auth-card{background:rgba(255,255,255,.95);width:100%;max-width:380px;border-radius:22px;padding:30px 26px;
+ box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;z-index:2;animation:pop .6s ease}
+@keyframes pop{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
+.logo{text-align:center;font-size:2rem;font-weight:bold;color:var(--main);margin-bottom:4px}
+.sub{text-align:center;color:var(--muted);margin-bottom:18px;font-size:.9rem}
+.tabs{display:flex;background:#eee;border-radius:12px;padding:4px;margin-bottom:18px}
+.tabs button{flex:1;border:none;background:none;padding:10px;border-radius:9px;font-weight:bold;color:var(--muted);transition:.3s}
+.tabs button.on{background:var(--main);color:#fff}
+.form{display:none;animation:fade .4s}
+.form.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+input,textarea{width:100%;padding:12px 14px;border:2px solid #e3e5ee;border-radius:12px;font-size:1rem;margin-bottom:12px;font-family:inherit;outline:none;transition:.2s}
+input:focus,textarea:focus{border-color:var(--main)}
+.btn{width:100%;padding:13px;border:none;border-radius:12px;background:var(--main);color:#fff;font-size:1rem;font-weight:bold;transition:.2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(108,92,231,.4)}
+.err{color:#d63031;text-align:center;font-size:.9rem;min-height:20px;margin-top:10px}
+
+/* ===== ওয়েলকাম ===== */
+#welcome{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ background:linear-gradient(135deg,var(--main),var(--main2));color:#fff;text-align:center;animation:wfade 2.6s forwards}
+#welcome .wave{font-size:4.5rem;animation:wave 1s ease infinite;transform-origin:70% 70%}
+#welcome h1{margin-top:10px;animation:pop .8s}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(20deg)}75%{transform:rotate(-15deg)}}
+@keyframes wfade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+/* ===== অ্যাপ ===== */
+nav{position:sticky;top:0;z-index:50;background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,.08);
+ display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
+nav .brand{font-weight:bold;color:var(--main);font-size:1.3rem}
+nav .links{display:flex;gap:6px}
+nav .links button{border:none;background:none;padding:8px 14px;border-radius:20px;font-weight:bold;color:var(--muted)}
+nav .links button.on{background:#ece9ff;color:var(--main)}
+.wrap{max-width:600px;margin:0 auto;padding:16px}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px rgba(0,0,0,.06);animation:pop .4s}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--main);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0}
+.row{display:flex;gap:10px;align-items:center}
+.post-head{margin-bottom:10px}
+.post-head b{display:block}
+.post-head small{color:var(--muted)}
+.post p{white-space:pre-wrap;word-break:break-word;margin-bottom:12px}
+.actions{display:flex;gap:6px;border-top:1px solid #eee;padding-top:8px}
+.actions button{flex:1;border:none;background:none;padding:8px;border-radius:10px;color:var(--muted);font-size:.95rem}
+.actions button:hover{background:#f3f1ff}
+.actions .liked{color:#e84393;font-weight:bold}
+.comments{margin-top:8px}
+.cm{background:#f5f6fa;border-radius:12px;padding:8px 12px;margin-bottom:6px;font-size:.92rem}
+.cm b{color:var(--main)}
+.cbox{display:flex;gap:8px;margin-top:6px}
+.cbox input{margin:0;padding:9px 12px}
+.cbox button{border:none;background:var(--main);color:#fff;border-radius:12px;padding:0 16px}
+.small-btn{border:none;background:var(--main);color:#fff;padding:9px 20px;border-radius:20px;font-weight:bold}
+.del{color:#d63031!important}
+.profile-top{text-align:center}
+.profile-top .avatar{width:80px;height:80px;font-size:2rem;margin:0 auto 10px}
+.stats{display:flex;justify-content:space-around;margin:14px 0}
+.stats div{text-align:center}.stats b{font-size:1.3rem;display:block}.stats span{color:var(--muted);font-size:.85rem}
+.empty{text-align:center;color:var(--muted);padding:30px}
+</style>
 </head>
-<body style="font-family:sans-serif; text-align:center; padding:40px;">
-  <h1>হ্যালো! 👋</h1>
-  <p>এটা আমার গিটহাবে বানানো প্রথম ওয়েবসাইট।</p>
-  <button onclick="alert('বাটন কাজ করছে!')">আমাকে চাপুন</button>
+<body>
+
+<!-- ===== লগইন / রেজিস্ট্রেশন পেজ ===== -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="logo">🌐 কানেক্ট</div>
+    <div class="sub">বন্ধুদের সাথে যুক্ত থাকুন</div>
+    <div class="tabs">
+      <button id="tLogin" class="on" onclick="showTab('login')">লগইন</button>
+      <button id="tReg" onclick="showTab('reg')">রেজিস্ট্রেশন</button>
+    </div>
+    <form id="login" class="form on" onsubmit="doLogin(event)">
+      <input id="lu" placeholder="ইউজারনেম" autocomplete="username" required>
+      <input id="lp" type="password" placeholder="পাসওয়ার্ড" autocomplete="current-password" required>
+      <button class="btn">লগইন করুন</button>
+    </form>
+    <form id="reg" class="form" onsubmit="doReg(event)">
+      <input id="rn" placeholder="আপনার নাম" required>
+      <input id="ru" placeholder="ইউজারনেম (ইংরেজি, স্পেস ছাড়া)" autocomplete="username" required>
+      <input id="rp" type="password" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" autocomplete="new-password" required>
+      <input id="rp2" type="password" placeholder="পাসওয়ার্ড আবার লিখুন" autocomplete="new-password" required>
+      <button class="btn">অ্যাকাউন্ট খুলুন</button>
+    </form>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<!-- ===== ওয়েলকাম স্ক্রিন ===== -->
+<div id="welcome" class="hidden">
+  <div class="wave">👋</div>
+  <h1 id="wtext"></h1>
+  <p>আপনাকে পেয়ে ভালো লাগছে</p>
+</div>
+
+<!-- ===== মূল অ্যাপ ===== -->
+<div id="app" class="hidden">
+  <nav>
+    <div class="brand">🌐 কানেক্ট</div>
+    <div class="links">
+      <button id="nFeed" class="on" onclick="go('feed')">🏠 হোম</button>
+      <button id="nProf" onclick="go('prof')">👤 প্রোফাইল</button>
+      <button onclick="logout()">🚪</button>
+    </div>
+  </nav>
+  <div class="wrap" id="view"></div>
+</div>
+
+<script>
+/* ====== ডাটা (এই ব্রাউজারেই সেভ হয়) ====== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+let users = load('users', {});
+let posts = load('posts', null);
+let me = load('session', null);
+let page = 'feed';
+
+if (!posts) {
+  posts = [
+    {id:1, user:'demo1', name:'রাহিম', text:'কানেক্টে সবাইকে স্বাগতম! 🎉', time:Date.now()-3600000, likes:[], comments:[]},
+    {id:2, user:'demo2', name:'নাদিয়া', text:'আজকের আবহাওয়াটা কি সুন্দর ☀️', time:Date.now()-7200000, likes:[], comments:[{user:'demo1',name:'রাহিম',text:'সত্যি!'}]}
+  ];
+  save('posts', posts);
+}
+
+/* ====== অ্যানিমেটেড বাবল ====== */
+for (let i = 0; i < 14; i++) {
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const s = 20 + Math.random() * 80;
+  b.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${8+Math.random()*10}s;animation-delay:${Math.random()*8}s`;
+  $('auth').appendChild(b);
+}
+
+/* ====== পাসওয়ার্ড হ্যাশ ====== */
+async function hash(p) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+/* ====== লগইন / রেজিস্ট্রেশন ====== */
+function showTab(t) {
+  $('login').classList.toggle('on', t === 'login');
+  $('reg').classList.toggle('on', t === 'reg');
+  $('tLogin').classList.toggle('on', t === 'login');
+  $('tReg').classList.toggle('on', t === 'reg');
+  $('err').textContent = '';
+}
+async function doReg(e) {
+  e.preventDefault();
+  const name = $('rn').value.trim(), u = $('ru').value.trim().toLowerCase(), p = $('rp').value;
+  if (!/^[a-z0-9_]{3,20}$/.test(u)) return $('err').textContent = 'ইউজারনেম ৩-২০ অক্ষর, শুধু ইংরেজি অক্ষর, সংখ্যা ও _';
+  if (p.length < 6) return $('err').textContent = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে';
+  if (p !== $('rp2').value) return $('err').textContent = 'দুটি পাসওয়ার্ড মিলছে না';
+  if (users[u]) return $('err').textContent = 'এই ইউজারনেম আগেই নেওয়া হয়েছে';
+  users[u] = {name, hash: await hash(p), bio: '', joined: Date.now()};
+  save('users', users);
+  enter(u);
+}
+async function doLogin(e) {
+  e.preventDefault();
+  const u = $('lu').value.trim().toLowerCase();
+  const usr = users[u];
+  if (!usr || usr.hash !== await hash($('lp').value)) return $('err').textContent = 'ইউজারনেম বা পাসওয়ার্ড ভুল';
+  enter(u);
+}
+function enter(u) {
+  me = u; save('session', u);
+  $('auth').classList.add('hidden');
+  $('welcome').classList.remove('hidden');
+  $('wtext').textContent = 'স্বাগতম, ' + users[u].name + '!';
+  setTimeout(() => $('welcome').classList.add('hidden'), 2600);
+  $('app').classList.remove('hidden');
+  go('feed');
+}
+function logout() {
+  me = null; localStorage.removeItem('session');
+  $('app').classList.add('hidden');
+  $('auth').classList.remove('hidden');
+  $('err').textContent = '';
+}
+
+/* ====== নেভিগেশন ====== */
+function go(p) {
+  page = p;
+  $('nFeed').classList.toggle('on', p === 'feed');
+  $('nProf').classList.toggle('on', p === 'prof');
+  render();
+}
+function ago(t) {
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return 'এইমাত্র';
+  if (m < 60) return m + ' মিনিট আগে';
+  if (m < 1440) return Math.floor(m / 60) + ' ঘণ্টা আগে';
+  return Math.floor(m / 1440) + ' দিন আগে';
+}
+const init = n => esc((n || '?').trim().charAt(0).toUpperCase());
+
+/* ====== রেন্ডার ====== */
+function postHTML(p) {
+  const liked = p.likes.includes(me);
+  return `<div class="card post">
+    <div class="row post-head"><div class="avatar">${init(p.name)}</div>
+      <div><b>${esc(p.name)}</b><small>@${esc(p.user)} · ${ago(p.time)}</small></div></div>
+    <p>${esc(p.text)}</p>
+    <div class="actions">
+      <button class="${liked ? 'liked' : ''}" onclick="like(${p.id})">${liked ? '❤️' : '🤍'} ${p.likes.length}</button>
+      <button onclick="toggleC(${p.id})">💬 ${p.comments.length}</button>
+      ${p.user === me ? `<button class="del" onclick="delPost(${p.id})">🗑️ মুছুন</button>` : ''}
+    </div>
+    <div class="comments hidden" id="c${p.id}">
+      ${p.comments.map(c => `<div class="cm"><b>${esc(c.name)}</b> ${esc(c.text)}</div>`).join('')}
+      <div class="cbox"><input id="ci${p.id}" placeholder="মন্তব্য লিখুন..." onkeydown="if(event.key==='Enter')comment(${p.id})">
+      <button onclick="comment(${p.id})">➤</button></div>
+    </div></div>`;
+}
+function render() {
+  const v = $('view');
+  if (page === 'feed') {
+    v.innerHTML = `<div class="card"><div class="row"><div class="avatar">${init(users[me].name)}</div>
+      <b>আপনার মনে কী চলছে, ${esc(users[me].name)}?</b></div><br>
+      <textarea id="newp" rows="3" placeholder="কিছু লিখুন..."></textarea>
+      <div style="text-align:right"><button class="small-btn" onclick="addPost()">পোস্ট করুন</button></div></div>
+      ${posts.length ? posts.map(postHTML).join('') : '<div class="empty">এখনো কোনো পোস্ট নেই</div>'}`;
+  } else {
+    const mine = posts.filter(p => p.user === me);
+    const likes = mine.reduce((a, p) => a + p.likes.length, 0);
+    const u = users[me];
+    v.innerHTML = `<div class="card profile-top"><div class="avatar">${init(u.name)}</div>
+      <h2>${esc(u.name)}</h2><small style="color:var(--muted)">@${esc(me)}</small>
+      <p style="margin-top:8px">${esc(u.bio) || 'কোনো বায়ো নেই'}</p>
+      <div class="stats"><div><b>${mine.length}</b><span>পোস্ট</span></div><div><b>${likes}</b><span>লাইক</span></div></div>
+      <input id="bio" placeholder="নতুন বায়ো লিখুন" maxlength="100">
+      <button class="small-btn" onclick="saveBio()">বায়ো সেভ করুন</button></div>
+      <h3 style="margin:6px 4px 10px">আমার পোস্ট</h3>
+      ${mine.length ? mine.map(postHTML).join('') : '<div class="empty">আপনি এখনো কিছু পোস্ট করেননি</div>'}`;
+  }
+}
+
+/* ====== অ্যাকশন ====== */
+function addPost() {
+  const t = $('newp').value.trim();
+  if (!t) return;
+  posts.unshift({id: Date.now(), user: me, name: users[me].name, text: t, time: Date.now(), likes: [], comments: []});
+  save('posts', posts); render();
+}
+function like(id) {
+  const p = posts.find(x => x.id === id);
+  p.likes = p.likes.includes(me) ? p.likes.filter(x => x !== me) : [...p.likes, me];
+  save('posts', posts); render();
+}
+function toggleC(id) { $('c' + id).classList.toggle('hidden'); }
+function comment(id) {
+  const t = $('ci' + id).value.trim();
+  if (!t) return;
+  posts.find(x => x.id === id).comments.push({user: me, name: users[me].name, text: t});
+  save('posts', posts); render();
+  $('c' + id).classList.remove('hidden');
+}
+function delPost(id) {
+  if (!confirm('পোস্টটি মুছে ফেলবেন?')) return;
+  posts = posts.filter(x => x.id !== id);
+  save('posts', posts); render();
+}
+function saveBio() {
+  users[me].bio = $('bio').value.trim();
+  save('users', users); render();
+}
+
+/* ====== আগে লগইন করা থাকলে সরাসরি ঢুকুন ====== */
+if (me && users[me]) {
+  $('auth').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  go('feed');
+}
+</script>
 </body>
-</html>
+  </html>
+    
